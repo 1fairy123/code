@@ -1,0 +1,39 @@
+scRNA_se_ha<-readRDS("harmony/scRNA_se_ha.rds")
+scRNA_mild_ha<-readRDS("harmony/scRNA_mild_ha.rds")
+scRNA_conv_ha<-readRDS("harmony/scRNA_conv_ha.rds")
+scRNA_HD_ha<-readRDS("harmony/scRNA_HD_ha.rds")
+
+
+Idents(scRNA_se_ha) <- "se"
+Idents(scRNA_mild_ha) <- "mild"
+Idents(scRNA_conv_ha) <- "conv"
+Idents(scRNA_HD_ha) <- "HD"
+
+scRNA <- merge(x=scRNA_se_ha,y=c(scRNA_mild_ha,scRNA_conv_ha,scRNA_HD_ha))
+list_data <- list()
+list_data[["mait"]] <- scRNA
+
+# install.packages("PFP")
+# BiocManager::install("org.Hs.eg.db")
+library(PFP)
+library(clusterProfiler)
+#library(XML)
+library(org.Hs.eg.db)
+list_diff_genes2 <- list()
+i=1
+for (data0 in list_data){
+  DefaultAssay(data0) <- "RNA"  
+  #Idents(data0) <- "group"
+  #genes1 <- FindMarkers(object = data0,ident.1 = "HD",ident.2 = "Moderate",logfc.threshold = 0.25)
+  genes1 <- FindMarkers(object = data0,ident.1 = "HD",ident.2 = "mild" ,logfc.threshold = 0.15)
+  genes1 <- genes1[order(genes1$avg_log2FC,decreasing = T),]
+  genes1 <- genes1[genes1$p_val_adj<0.05,]
+  
+#  genes2 <- bitr(geneID = rownames(genes1),fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+#  list_diff_genes2[[i]] <- genes2$ENTREZID
+  i=i+1
+}
+
+
+
+write.csv(genes1,file="HD-mildmaker.csv")

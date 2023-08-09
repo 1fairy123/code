@@ -1,0 +1,36 @@
+rm(list=ls())
+setwd("F:\\HLQ\\harmony")
+
+library(readr)
+library(data.table)
+library(Seurat)
+library(harmony)
+library(patchwork)
+library(tidyverse)
+
+raw.data<-read.table("E:\\local\\new_conv.txt",header=T)
+i <- 1
+
+#head(raw.data)
+raw.data = raw.data[!duplicated(raw.data[, 1]), ]
+rownames(raw.data)<-raw.data[,1]
+raw.data = raw.data[,-1]
+# raw.data<-raw.data[,c(-1,-2)]
+# raw.data<-t(raw.data)
+datan = data.frame(raw.data)
+dataan <- as(as.matrix(datan), "dgCMatrix")
+pbmcnewconv<- CreateSeuratObject(counts = dataan)
+
+scRNAlist<-list(pbmc150conv,pbmc150HD,pbmc150mild,pbmc150se,pbmc1555673HD,pbmc1555673mild,pbmc1555673se,pbmcnewconv,pbmcnewHD,pbmcnewmild,pbmcnewse)
+
+
+load("fen.RData")
+
+scRNA_harmony <- merge(scRNAlist[[2]], y=c(scRNAlist[[5]], scRNAlist[[9]], scRNAlist[[4]], scRNAlist[[5]], 
+                                           scRNAlist[[6]], scRNAlist[[7]], scRNAlist[[8]], scRNAlist[[9]], scRNAlist[[10]], scRNAlist[[11]]))
+scRNA_harmony <- NormalizeData(scRNA_harmony) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose=FALSE)
+##整合
+system.time({scRNA_harmony <- RunHarmony(scRNA_harmony, group.by.vars = "orig.ident")})
+
+saveRDS(scRNA_harmony,"scRNA_harmony.rds")
+
